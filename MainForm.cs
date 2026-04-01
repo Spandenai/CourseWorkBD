@@ -52,6 +52,7 @@ namespace CourseWork
             Text = "Internet Provider - Главное меню";
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
+            WindowState = FormWindowState.Maximized;
             MinimumSize = new Size(1280, 760);
             Size = new Size(1400, 820);
             BackColor = appBackColor;

@@ -42,8 +42,9 @@ namespace CourseWork
         private TextBox txtPhone = null!;
         private TextBox txtEmail = null!;
         private TextBox txtAddress = null!;
+        private bool suppressSelectionChanged = false;
 
-        private PictureBox pictureBox = null!;
+        private CoverPictureBox pictureBox = null!;
 
         private readonly string bannerPath =
             Path.Combine(Application.StartupPath, "Images", "clients_banner.png");
@@ -65,8 +66,9 @@ namespace CourseWork
             Text = "Clients - Клиенты";
             Name = "Clients";
             StartPosition = FormStartPosition.CenterScreen;
+            WindowState = FormWindowState.Maximized;
             MinimumSize = new Size(1500, 940);
-            Size = new Size(1620, 980);
+            Size = new Size(1800, 1150);
             BackColor = formBackColor;
             Font = new Font("Segoe UI", 10f, FontStyle.Regular);
             FormBorderStyle = FormBorderStyle.Sizable;
@@ -319,11 +321,10 @@ namespace CourseWork
                 Padding = new Padding(0)
             };
 
-            pictureBox = new PictureBox
+            pictureBox = new CoverPictureBox
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(232, 240, 247),
-                SizeMode = PictureBoxSizeMode.Zoom
+                BackColor = Color.FromArgb(232, 240, 247)
             };
 
             card.Controls.Add(pictureBox);
@@ -647,6 +648,9 @@ namespace CourseWork
 
         private void DgvClients_SelectionChanged(object? sender, EventArgs e)
         {
+            if (suppressSelectionChanged)
+                return;
+
             if (dgvClients.CurrentRow?.DataBoundItem is not DataRowView rowView)
                 return;
 
@@ -839,15 +843,26 @@ namespace CourseWork
 
         private void ClearInputs()
         {
-            txtClientId.Text = "";
-            txtLastName.Text = "";
-            txtFirstName.Text = "";
-            txtMiddleName.Text = "";
-            txtPhone.Text = "";
-            txtEmail.Text = "";
-            txtAddress.Text = "";
+            suppressSelectionChanged = true;
 
-            dgvClients.ClearSelection();
+            try
+            {
+                dgvClients.ClearSelection();
+                dgvClients.CurrentCell = null;
+
+                txtClientId.Text = "";
+                txtLastName.Text = "";
+                txtFirstName.Text = "";
+                txtMiddleName.Text = "";
+                txtPhone.Text = "";
+                txtEmail.Text = "";
+                txtAddress.Text = "";
+            }
+            finally
+            {
+                suppressSelectionChanged = false;
+            }
+
             txtLastName.Focus();
         }
 
@@ -963,6 +978,74 @@ namespace CourseWork
                 path.CloseFigure();
 
                 return path;
+            }
+        }
+
+        [DesignerCategory("Code")]
+        private class CoverPictureBox : Control
+        {
+            private Image? image;
+
+            [Browsable(false)]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+            public Image? Image
+            {
+                get => image;
+                set
+                {
+                    image = value;
+                    Invalidate();
+                }
+            }
+
+            public CoverPictureBox()
+            {
+                DoubleBuffered = true;
+                ResizeRedraw = true;
+
+                SetStyle(
+                    ControlStyles.AllPaintingInWmPaint |
+                    ControlStyles.OptimizedDoubleBuffer |
+                    ControlStyles.ResizeRedraw |
+                    ControlStyles.UserPaint,
+                    true);
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+
+                e.Graphics.Clear(BackColor);
+                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+
+                if (Image == null || Width <= 0 || Height <= 0)
+                    return;
+
+                float imageRatio = (float)Image.Width / Image.Height;
+                float controlRatio = (float)Width / Height;
+
+                RectangleF srcRect;
+
+                if (imageRatio > controlRatio)
+                {
+                    float srcWidth = Image.Height * controlRatio;
+                    float srcX = (Image.Width - srcWidth) / 2f;
+                    srcRect = new RectangleF(srcX, 0, srcWidth, Image.Height);
+                }
+                else
+                {
+                    float srcHeight = Image.Width / controlRatio;
+                    float srcY = (Image.Height - srcHeight) / 2f;
+                    srcRect = new RectangleF(0, srcY, Image.Width, srcHeight);
+                }
+
+                e.Graphics.DrawImage(
+                    Image,
+                    new Rectangle(0, 0, Width, Height),
+                    srcRect,
+                    GraphicsUnit.Pixel);
             }
         }
     }
