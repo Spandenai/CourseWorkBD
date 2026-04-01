@@ -172,16 +172,6 @@ namespace CourseWork
             dbCard.Controls.Add(lblDbName);
             dbCard.Controls.Add(lblDbCaption);
 
-            var lblMenuCaption = new Label
-            {
-                AutoSize = false,
-                Text = "Быстрые действия",
-                ForeColor = Color.FromArgb(148, 163, 184),
-                Font = new Font("Segoe UI Semibold", 10f, FontStyle.Bold),
-                Location = new Point(24, 392),
-                Size = new Size(240, 24)
-            };
-
             var btnAbout = CreateSidebarButton("О программе", accentCyan, (s, e) =>
             {
                 MessageBox.Show(
@@ -197,10 +187,10 @@ namespace CourseWork
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             });
-            btnAbout.Location = new Point(24, 425);
+            btnAbout.Location = new Point(24, 392);
 
             var btnExit = CreateSidebarButton("Выход", accentAmber, (s, e) => Close());
-            btnExit.Location = new Point(24, 483);
+            btnExit.Location = new Point(24, 450);
 
             var lblFooter = new Label
             {
@@ -208,18 +198,26 @@ namespace CourseWork
                 Text = "Курсовой проект • Главное меню",
                 ForeColor = Color.FromArgb(100, 116, 139),
                 Font = new Font("Segoe UI", 9f, FontStyle.Regular),
-                Location = new Point(24, 675),
-                Size = new Size(240, 24)
+                Size = new Size(240, 24),
+                Anchor = AnchorStyles.Left | AnchorStyles.Bottom
             };
+
+            void UpdateFooterPosition()
+            {
+                lblFooter.Location = new Point(24, sidebar.Height - lblFooter.Height - 24);
+            }
+
+            sidebar.Resize += (s, e) => UpdateFooterPosition();
 
             sidebar.Controls.Add(logoCircle);
             sidebar.Controls.Add(lblAppTitle);
             sidebar.Controls.Add(lblAppSubtitle);
             sidebar.Controls.Add(dbCard);
-            sidebar.Controls.Add(lblMenuCaption);
             sidebar.Controls.Add(btnAbout);
             sidebar.Controls.Add(btnExit);
             sidebar.Controls.Add(lblFooter);
+
+            UpdateFooterPosition();
 
             return sidebar;
         }
@@ -420,39 +418,17 @@ namespace CourseWork
                 BorderColor = borderColor,
                 Radius = 28,
                 Margin = new Padding(14, 0, 0, 0),
-                Padding = new Padding(22)
-            };
-
-            var lblTitle = new Label
-            {
-                Dock = DockStyle.Top,
-                Height = 36,
-                Text = "Визуальный блок",
-                Font = new Font("Segoe UI Semibold", 18f, FontStyle.Bold),
-                ForeColor = titleColor
-            };
-
-            var imageHolder = new ModernCard
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(248, 250, 252),
-                BorderColor = borderColor,
-                Radius = 24,
-                Margin = new Padding(0, 14, 0, 0),
                 Padding = new Padding(0)
             };
 
             pictureBox = new PictureBox
             {
                 Dock = DockStyle.Fill,
-                SizeMode = PictureBoxSizeMode.Zoom,
+                SizeMode = PictureBoxSizeMode.StretchImage,
                 BackColor = Color.Transparent
             };
 
-            imageHolder.Controls.Add(pictureBox);
-
-            card.Controls.Add(imageHolder);
-            card.Controls.Add(lblTitle);
+            card.Controls.Add(pictureBox);
 
             return card;
         }
