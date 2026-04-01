@@ -350,7 +350,7 @@ namespace CourseWork
                 ColumnCount = 2,
                 RowCount = 3,
                 Padding = new Padding(0, 14, 0, 0),
-                BackColor = Color.Transparent
+                BackColor = cardBackColor
             };
 
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
@@ -439,7 +439,7 @@ namespace CourseWork
             {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(10),
-                BackColor = Color.Transparent
+                BackColor = cardBackColor
             };
 
             control.Dock = DockStyle.Fill;
@@ -595,253 +595,284 @@ namespace CourseWork
             base.OnFormClosed(e);
         }
 
-        [DesignerCategory("Code")]
-        private class ModernCard : Panel
+[DesignerCategory("Code")]
+private class ModernCard : Panel
+{
+    private int radius = 24;
+    private Color borderColor = Color.FromArgb(214, 223, 235);
+    private GraphicsPath cachedPath;
+
+    [Browsable(true)]
+    [Category("Appearance")]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public int Radius
+    {
+        get => radius;
+        set
         {
-            private int radius = 24;
-            private Color borderColor = Color.FromArgb(226, 232, 240);
+            radius = value < 1 ? 1 : value;
+            RebuildRegion();
+            Invalidate();
+        }
+    }
 
-            [Browsable(true)]
-            [Category("Appearance")]
-            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-            public int Radius
-            {
-                get => radius;
-                set
-                {
-                    radius = value < 1 ? 1 : value;
-                    Invalidate();
-                }
-            }
+    [Browsable(true)]
+    [Category("Appearance")]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public Color BorderColor
+    {
+        get => borderColor;
+        set
+        {
+            borderColor = value;
+            Invalidate();
+        }
+    }
 
-            [Browsable(true)]
-            [Category("Appearance")]
-            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-            public Color BorderColor
-            {
-                get => borderColor;
-                set
-                {
-                    borderColor = value;
-                    Invalidate();
-                }
-            }
+    public ModernCard()
+    {
+        DoubleBuffered = true;
+        ResizeRedraw = true;
+        BackColor = Color.White;
+    }
 
-            public ModernCard()
-            {
-                DoubleBuffered = true;
-                ResizeRedraw = true;
-                BackColor = Color.White;
-            }
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        base.OnSizeChanged(e);
+        RebuildRegion();
+    }
 
-            protected override void OnPaint(PaintEventArgs e)
-            {
-                base.OnPaint(e);
+    private void RebuildRegion()
+    {
+        cachedPath?.Dispose();
+        cachedPath = null;
 
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        if (Width <= 1 || Height <= 1)
+            return;
 
-                var rect = new Rectangle(0, 0, Width - 1, Height - 1);
-                using var path = GetRoundedPath(rect, Radius);
-                using var brush = new SolidBrush(BackColor);
-                using var pen = new Pen(BorderColor, 1);
+        cachedPath = GetRoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
 
-                e.Graphics.FillPath(brush, path);
-                e.Graphics.DrawPath(pen, path);
+        Region?.Dispose();
+        Region = new Region(cachedPath);
+    }
 
-                Region = new Region(path);
-            }
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
 
-            private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
-            {
-                int d = radius * 2;
-                var path = new GraphicsPath();
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-                path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-                path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-                path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-                path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-                path.CloseFigure();
+        using var path = cachedPath != null
+            ? (GraphicsPath)cachedPath.Clone()
+            : GetRoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
 
-                return path;
-            }
+        using var brush = new SolidBrush(BackColor);
+        using var pen = new Pen(BorderColor, 1.4f);
+
+        e.Graphics.FillPath(brush, path);
+        e.Graphics.DrawPath(pen, path);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            cachedPath?.Dispose();
+            Region?.Dispose();
         }
 
-        [DesignerCategory("Code")]
-        private class SectionButton : Control
+        base.Dispose(disposing);
+    }
+
+    private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
+    {
+        int d = radius * 2;
+        var path = new GraphicsPath();
+
+        path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+        path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+        path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+        path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+        path.CloseFigure();
+
+        return path;
+    }
+}
+
+[DesignerCategory("Code")]
+private class SectionButton : Control
+{
+    private string title = "Раздел";
+    private string subtitle = "Описание раздела";
+    private Color accentColor = Color.FromArgb(14, 165, 233);
+
+    private bool isHovered;
+    private bool isPressed;
+
+    [Browsable(true)]
+    [Category("Appearance")]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public string Title
+    {
+        get => title;
+        set
         {
-            private string title = "Раздел";
-            private string subtitle = "Описание раздела";
-            private Color accentColor = Color.FromArgb(14, 165, 233);
-
-            private bool isHovered;
-            private bool isPressed;
-
-            [Browsable(true)]
-            [Category("Appearance")]
-            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-            public string Title
-            {
-                get => title;
-                set
-                {
-                    title = value;
-                    Invalidate();
-                }
-            }
-
-            [Browsable(true)]
-            [Category("Appearance")]
-            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-            public string Subtitle
-            {
-                get => subtitle;
-                set
-                {
-                    subtitle = value;
-                    Invalidate();
-                }
-            }
-
-            [Browsable(true)]
-            [Category("Appearance")]
-            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-            public Color AccentColor
-            {
-                get => accentColor;
-                set
-                {
-                    accentColor = value;
-                    Invalidate();
-                }
-            }
-
-            public SectionButton()
-            {
-                DoubleBuffered = true;
-                Cursor = Cursors.Hand;
-                Size = new Size(320, 160);
-                Font = new Font("Segoe UI", 10f);
-
-                SetStyle(
-                    ControlStyles.AllPaintingInWmPaint |
-                    ControlStyles.OptimizedDoubleBuffer |
-                    ControlStyles.ResizeRedraw |
-                    ControlStyles.UserPaint,
-                    true);
-            }
-
-            protected override void OnMouseEnter(EventArgs e)
-            {
-                base.OnMouseEnter(e);
-                isHovered = true;
-                Invalidate();
-            }
-
-            protected override void OnMouseLeave(EventArgs e)
-            {
-                base.OnMouseLeave(e);
-                isHovered = false;
-                isPressed = false;
-                Invalidate();
-            }
-
-            protected override void OnMouseDown(MouseEventArgs e)
-            {
-                base.OnMouseDown(e);
-                isPressed = true;
-                Invalidate();
-            }
-
-            protected override void OnMouseUp(MouseEventArgs e)
-            {
-                base.OnMouseUp(e);
-                isPressed = false;
-                Invalidate();
-            }
-
-            protected override void OnPaint(PaintEventArgs e)
-            {
-                base.OnPaint(e);
-
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-                Color back = Color.White;
-                Color border = Color.FromArgb(226, 232, 240);
-
-                if (isHovered)
-                {
-                    back = Blend(Color.White, AccentColor, 0.07);
-                    border = Blend(Color.FromArgb(226, 232, 240), AccentColor, 0.45);
-                }
-
-                if (isPressed)
-                {
-                    back = Blend(Color.White, AccentColor, 0.13);
-                    border = Blend(Color.FromArgb(226, 232, 240), AccentColor, 0.60);
-                }
-
-                var rect = new Rectangle(0, 0, Width - 1, Height - 1);
-
-                using var path = GetRoundedPath(rect, 24);
-                using var brush = new SolidBrush(back);
-                using var pen = new Pen(border, 1);
-
-                e.Graphics.FillPath(brush, path);
-                e.Graphics.DrawPath(pen, path);
-
-                using var accentBrush = new SolidBrush(AccentColor);
-                e.Graphics.FillEllipse(accentBrush, 18, 18, 14, 14);
-
-                using var titleBrush = new SolidBrush(Color.FromArgb(15, 23, 42));
-                using var subtitleBrush = new SolidBrush(Color.FromArgb(100, 116, 139));
-                using var arrowBrush = new SolidBrush(AccentColor);
-                using var titleFont = new Font("Segoe UI Semibold", 15f, FontStyle.Bold);
-                using var subFont = new Font("Segoe UI", 10f, FontStyle.Regular);
-                using var arrowFont = new Font("Segoe UI Semibold", 18f, FontStyle.Bold);
-
-                e.Graphics.DrawString(
-                    Title,
-                    titleFont,
-                    titleBrush,
-                    new RectangleF(18, 42, Width - 70, 36));
-
-                e.Graphics.DrawString(
-                    Subtitle,
-                    subFont,
-                    subtitleBrush,
-                    new RectangleF(18, 82, Width - 70, 48));
-
-                e.Graphics.DrawString(
-                    "→",
-                    arrowFont,
-                    arrowBrush,
-                    new RectangleF(Width - 48, Height - 46, 24, 24));
-
-                Region = new Region(path);
-            }
-
-            private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
-            {
-                int d = radius * 2;
-                var path = new GraphicsPath();
-
-                path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-                path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-                path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-                path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-                path.CloseFigure();
-
-                return path;
-            }
-
-            private static Color Blend(Color from, Color to, double amount)
-            {
-                int r = (int)(from.R + (to.R - from.R) * amount);
-                int g = (int)(from.G + (to.G - from.G) * amount);
-                int b = (int)(from.B + (to.B - from.B) * amount);
-
-                return Color.FromArgb(r, g, b);
-            }
+            title = value;
+            Invalidate();
         }
+    }
+
+    [Browsable(true)]
+    [Category("Appearance")]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public string Subtitle
+    {
+        get => subtitle;
+        set
+        {
+            subtitle = value;
+            Invalidate();
+        }
+    }
+
+    [Browsable(true)]
+    [Category("Appearance")]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public Color AccentColor
+    {
+        get => accentColor;
+        set
+        {
+            accentColor = value;
+            Invalidate();
+        }
+    }
+
+    public SectionButton()
+    {
+        DoubleBuffered = true;
+        Cursor = Cursors.Hand;
+        Size = new Size(320, 160);
+        Font = new Font("Segoe UI", 10f);
+
+        SetStyle(
+            ControlStyles.AllPaintingInWmPaint |
+            ControlStyles.OptimizedDoubleBuffer |
+            ControlStyles.ResizeRedraw |
+            ControlStyles.UserPaint,
+            true);
+    }
+
+    protected override void OnMouseEnter(EventArgs e)
+    {
+        base.OnMouseEnter(e);
+        isHovered = true;
+        Invalidate();
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+        isHovered = false;
+        isPressed = false;
+        Invalidate();
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        base.OnMouseDown(e);
+        isPressed = true;
+        Invalidate();
+    }
+
+    protected override void OnMouseUp(MouseEventArgs e)
+    {
+        base.OnMouseUp(e);
+        isPressed = false;
+        Invalidate();
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        Color back = Color.White;
+        Color border = Color.FromArgb(203, 213, 225);
+
+        if (isHovered)
+        {
+            back = Blend(Color.White, AccentColor, 0.08);
+            border = Blend(Color.FromArgb(203, 213, 225), AccentColor, 0.55);
+        }
+
+        if (isPressed)
+        {
+            back = Blend(Color.White, AccentColor, 0.14);
+            border = Blend(Color.FromArgb(203, 213, 225), AccentColor, 0.75);
+        }
+
+        var rect = new Rectangle(0, 0, Width - 1, Height - 1);
+
+        using var path = GetRoundedPath(rect, 24);
+        using var brush = new SolidBrush(back);
+        using var pen = new Pen(border, 2f);
+
+        e.Graphics.FillPath(brush, path);
+        e.Graphics.DrawPath(pen, path);
+
+        using var accentBrush = new SolidBrush(AccentColor);
+        e.Graphics.FillEllipse(accentBrush, 18, 18, 14, 14);
+
+        using var titleBrush = new SolidBrush(Color.FromArgb(15, 23, 42));
+        using var subtitleBrush = new SolidBrush(Color.FromArgb(100, 116, 139));
+        using var arrowBrush = new SolidBrush(AccentColor);
+        using var titleFont = new Font("Segoe UI Semibold", 15f, FontStyle.Bold);
+        using var subFont = new Font("Segoe UI", 10f, FontStyle.Regular);
+        using var arrowFont = new Font("Segoe UI Semibold", 18f, FontStyle.Bold);
+
+        e.Graphics.DrawString(
+            Title,
+            titleFont,
+            titleBrush,
+            new RectangleF(18, 42, Width - 70, 36));
+
+        e.Graphics.DrawString(
+            Subtitle,
+            subFont,
+            subtitleBrush,
+            new RectangleF(18, 82, Width - 70, 48));
+
+        e.Graphics.DrawString(
+            "→",
+            arrowFont,
+            arrowBrush,
+            new RectangleF(Width - 48, Height - 46, 24, 24));
+    }
+
+    private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
+    {
+        int d = radius * 2;
+        var path = new GraphicsPath();
+
+        path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+        path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+        path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+        path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+        path.CloseFigure();
+
+        return path;
+    }
+
+    private static Color Blend(Color from, Color to, double amount)
+    {
+        int r = (int)(from.R + (to.R - from.R) * amount);
+        int g = (int)(from.G + (to.G - from.G) * amount);
+        int b = (int)(from.B + (to.B - from.B) * amount);
+
+        return Color.FromArgb(r, g, b);
+    }
+}
     }
 }
