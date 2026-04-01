@@ -590,21 +590,38 @@ namespace CourseWork
             if (dgvClients.Columns.Count == 0)
                 return;
 
-            dgvClients.Columns["client_id"].HeaderText = "ID";
-            dgvClients.Columns["last_name"].HeaderText = "Фамилия";
-            dgvClients.Columns["first_name"].HeaderText = "Имя";
-            dgvClients.Columns["middle_name"].HeaderText = "Отчество";
-            dgvClients.Columns["phone"].HeaderText = "Телефон";
-            dgvClients.Columns["email"].HeaderText = "Email";
-            dgvClients.Columns["connection_address"].HeaderText = "Адрес подключения";
+            DataGridViewColumn? colClientId = dgvClients.Columns["client_id"];
+            DataGridViewColumn? colLastName = dgvClients.Columns["last_name"];
+            DataGridViewColumn? colFirstName = dgvClients.Columns["first_name"];
+            DataGridViewColumn? colMiddleName = dgvClients.Columns["middle_name"];
+            DataGridViewColumn? colPhone = dgvClients.Columns["phone"];
+            DataGridViewColumn? colEmail = dgvClients.Columns["email"];
+            DataGridViewColumn? colAddress = dgvClients.Columns["connection_address"];
 
-            dgvClients.Columns["client_id"].FillWeight = 50;
-            dgvClients.Columns["last_name"].FillWeight = 95;
-            dgvClients.Columns["first_name"].FillWeight = 85;
-            dgvClients.Columns["middle_name"].FillWeight = 95;
-            dgvClients.Columns["phone"].FillWeight = 90;
-            dgvClients.Columns["email"].FillWeight = 120;
-            dgvClients.Columns["connection_address"].FillWeight = 170;
+            if (colClientId == null ||
+                colLastName == null ||
+                colFirstName == null ||
+                colMiddleName == null ||
+                colPhone == null ||
+                colEmail == null ||
+                colAddress == null)
+                return;
+
+            colClientId.HeaderText = "ID";
+            colLastName.HeaderText = "Фамилия";
+            colFirstName.HeaderText = "Имя";
+            colMiddleName.HeaderText = "Отчество";
+            colPhone.HeaderText = "Телефон";
+            colEmail.HeaderText = "Email";
+            colAddress.HeaderText = "Адрес подключения";
+
+            colClientId.FillWeight = 50;
+            colLastName.FillWeight = 95;
+            colFirstName.FillWeight = 85;
+            colMiddleName.FillWeight = 95;
+            colPhone.FillWeight = 90;
+            colEmail.FillWeight = 120;
+            colAddress.FillWeight = 170;
         }
 
         private void ApplyFilter()
@@ -1020,29 +1037,31 @@ namespace CourseWork
                 e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
 
-                if (Image == null || Width <= 0 || Height <= 0)
+                Image? img = Image;
+
+                if (img == null || Width <= 0 || Height <= 0)
                     return;
 
-                float imageRatio = (float)Image.Width / Image.Height;
+                float imageRatio = (float)img.Width / img.Height;
                 float controlRatio = (float)Width / Height;
 
                 RectangleF srcRect;
 
                 if (imageRatio > controlRatio)
                 {
-                    float srcWidth = Image.Height * controlRatio;
-                    float srcX = (Image.Width - srcWidth) / 2f;
-                    srcRect = new RectangleF(srcX, 0, srcWidth, Image.Height);
+                    float srcWidth = img.Height * controlRatio;
+                    float srcX = (img.Width - srcWidth) / 2f;
+                    srcRect = new RectangleF(srcX, 0, srcWidth, img.Height);
                 }
                 else
                 {
-                    float srcHeight = Image.Width / controlRatio;
-                    float srcY = (Image.Height - srcHeight) / 2f;
-                    srcRect = new RectangleF(0, srcY, Image.Width, srcHeight);
+                    float srcHeight = img.Width / controlRatio;
+                    float srcY = (img.Height - srcHeight) / 2f;
+                    srcRect = new RectangleF(0, srcY, img.Width, srcHeight);
                 }
 
                 e.Graphics.DrawImage(
-                    Image,
+                    img,
                     new Rectangle(0, 0, Width, Height),
                     srcRect,
                     GraphicsUnit.Pixel);
