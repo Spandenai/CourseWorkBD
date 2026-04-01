@@ -27,8 +27,8 @@ namespace CourseWork
         private readonly Color accentRose = Color.FromArgb(244, 63, 94);
         private readonly Color accentEmerald = Color.FromArgb(16, 185, 129);
 
-        private Label lblDateTime;
-        private PictureBox pictureBox;
+        private Label lblDateTime = null!;
+        private PictureBox pictureBox = null!;
 
         private readonly System.Windows.Forms.Timer clockTimer = new System.Windows.Forms.Timer();
 
@@ -600,7 +600,7 @@ private class ModernCard : Panel
 {
     private int radius = 24;
     private Color borderColor = Color.FromArgb(214, 223, 235);
-    private GraphicsPath cachedPath;
+    private GraphicsPath? cachedPath;
 
     [Browsable(true)]
     [Category("Appearance")]
