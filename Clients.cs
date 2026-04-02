@@ -11,10 +11,11 @@ namespace CourseWork
 {
     public partial class Clients : Form
     {
+        // Строка подключения к базе данных
         private readonly string connectionString =
             @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=InternetProviderDB;Integrated Security=True;Connect Timeout=30;Encrypt=False";
 
-        // Палитра
+        // Основные цвета формы
         private readonly Color formBackColor = Color.FromArgb(241, 245, 249);
         private readonly Color cardBackColor = Color.White;
         private readonly Color borderColor = Color.FromArgb(214, 223, 235);
@@ -22,19 +23,23 @@ namespace CourseWork
         private readonly Color textColor = Color.FromArgb(51, 65, 85);
         private readonly Color mutedTextColor = Color.FromArgb(100, 116, 139);
 
+        // Акцентные цвета кнопок
         private readonly Color accentBlue = Color.FromArgb(14, 165, 233);
         private readonly Color accentCyan = Color.FromArgb(6, 182, 212);
         private readonly Color accentEmerald = Color.FromArgb(16, 185, 129);
         private readonly Color accentAmber = Color.FromArgb(245, 158, 11);
         private readonly Color accentRose = Color.FromArgb(244, 63, 94);
 
+        // Таблица с данными и источник привязки
         private readonly DataTable clientsTable = new DataTable();
         private readonly BindingSource bindingSource = new BindingSource();
 
+        // Элементы таблицы и поиска
         private DataGridView dgvClients = null!;
         private TextBox txtSearch = null!;
         private Label lblTotal = null!;
 
+        // Поля карточки клиента
         private TextBox txtClientId = null!;
         private TextBox txtLastName = null!;
         private TextBox txtFirstName = null!;
@@ -42,10 +47,14 @@ namespace CourseWork
         private TextBox txtPhone = null!;
         private TextBox txtEmail = null!;
         private TextBox txtAddress = null!;
+
+        // Флаг для временного отключения SelectionChanged
         private bool suppressSelectionChanged = false;
 
+        // Блок изображения
         private CoverPictureBox pictureBox = null!;
 
+        // Путь к картинке для формы
         private readonly string bannerPath =
             Path.Combine(Application.StartupPath, "Images", "clients_banner.png");
 
@@ -53,6 +62,7 @@ namespace CourseWork
         {
             InitializeComponent();
 
+            // Убираем элементы дизайнера и создаём интерфейс кодом
             Controls.Clear();
 
             InitializeForm();
@@ -61,6 +71,7 @@ namespace CourseWork
             LoadClients();
         }
 
+        // Первичная настройка формы
         private void InitializeForm()
         {
             Text = "Clients - Клиенты";
@@ -76,6 +87,7 @@ namespace CourseWork
             DoubleBuffered = true;
         }
 
+        // Сборка всей формы
         private void BuildInterface()
         {
             SuspendLayout();
@@ -98,6 +110,7 @@ namespace CourseWork
             ResumeLayout(false);
         }
 
+        // Верхняя панель формы
         private Control BuildHeader()
         {
             var header = new Panel
@@ -140,6 +153,7 @@ namespace CourseWork
             header.Controls.Add(btnRefresh);
             header.Controls.Add(btnBack);
 
+            // Расположение кнопок справа
             void RepositionButtons()
             {
                 btnRefresh.Location = new Point(header.Width - btnRefresh.Width, 16);
@@ -152,6 +166,7 @@ namespace CourseWork
             return header;
         }
 
+        // Основная часть формы
         private Control BuildBody()
         {
             var body = new TableLayoutPanel
@@ -174,6 +189,7 @@ namespace CourseWork
             return body;
         }
 
+        // Левая карточка со списком клиентов
         private Control BuildGridCard()
         {
             var card = new ModernCard
@@ -233,6 +249,7 @@ namespace CourseWork
             topBar.Controls.Add(lblSearch);
             topBar.Controls.Add(txtSearch);
 
+            // Расположение строки поиска
             void RepositionSearch()
             {
                 txtSearch.Location = new Point(topBar.Width - txtSearch.Width, 18);
@@ -260,6 +277,7 @@ namespace CourseWork
                 EnableHeadersVisualStyles = false
             };
 
+            // Стиль заголовков таблицы
             dgvClients.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
             dgvClients.ColumnHeadersDefaultCellStyle.ForeColor = titleColor;
             dgvClients.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 10.5f, FontStyle.Bold);
@@ -267,6 +285,7 @@ namespace CourseWork
             dgvClients.ColumnHeadersHeight = 46;
             dgvClients.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
 
+            // Стиль строк таблицы
             dgvClients.DefaultCellStyle.BackColor = Color.White;
             dgvClients.DefaultCellStyle.ForeColor = textColor;
             dgvClients.DefaultCellStyle.SelectionBackColor = Color.FromArgb(224, 242, 254);
@@ -286,6 +305,7 @@ namespace CourseWork
             return card;
         }
 
+        // Правая колонка: картинка и карточка редактирования
         private Control BuildRightColumn()
         {
             var right = new TableLayoutPanel
@@ -309,6 +329,7 @@ namespace CourseWork
             return right;
         }
 
+        // Карточка с изображением
         private Control BuildImageCard()
         {
             var card = new ModernCard
@@ -331,6 +352,7 @@ namespace CourseWork
             return card;
         }
 
+        // Карточка с полями клиента
         private Control BuildEditorCard()
         {
             var card = new ModernCard
@@ -363,22 +385,23 @@ namespace CourseWork
 
             formPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
 
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));  // ID label
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));  // ID box
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));  // Фамилия label
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));  // Фамилия box
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));  // Имя label
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));  // Имя box
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));  // Отчество label
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));  // Отчество box
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));  // Телефон label
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));  // Телефон box
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));  // Email label
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));  // Email box
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));  // Адрес label
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 96f));  // Адрес box
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Остаток
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 96f));
+            formPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
+            // Поля ввода
             txtClientId = CreateTextBox(true);
             txtLastName = CreateTextBox();
             txtFirstName = CreateTextBox();
@@ -410,6 +433,7 @@ namespace CourseWork
             formPanel.Controls.Add(CreateFieldLabel("Адрес подключения"), 0, 12);
             formPanel.Controls.Add(txtAddress, 0, 13);
 
+            // Панель с кнопками
             var buttons = new TableLayoutPanel
             {
                 Dock = DockStyle.Bottom,
@@ -442,6 +466,7 @@ namespace CourseWork
             return card;
         }
 
+        // Обёртка для красивых отступов вокруг кнопки
         private Control WrapButton(Control button)
         {
             var panel = new Panel
@@ -457,6 +482,7 @@ namespace CourseWork
             return panel;
         }
 
+        // Подпись для поля
         private Label CreateFieldLabel(string text)
         {
             return new Label
@@ -470,6 +496,7 @@ namespace CourseWork
             };
         }
 
+        // Создание текстового поля
         private TextBox CreateTextBox(bool readOnly = false, bool multiline = false, int height = 40)
         {
             var box = new TextBox
@@ -488,6 +515,7 @@ namespace CourseWork
             return box;
         }
 
+        // Создание кнопки действия
         private Button CreateActionButton(
             string text,
             Color backColor,
@@ -512,6 +540,7 @@ namespace CourseWork
             button.FlatAppearance.BorderSize = 1;
             button.FlatAppearance.BorderColor = border;
 
+            // Эффект наведения
             button.MouseEnter += (s, e) =>
             {
                 if (backColor == Color.White)
@@ -530,6 +559,7 @@ namespace CourseWork
             return button;
         }
 
+        // Загрузка картинки, если файл существует
         private void LoadBannerIfExists()
         {
             try
@@ -546,6 +576,7 @@ namespace CourseWork
             }
         }
 
+        // Загрузка клиентов из базы
         private void LoadClients()
         {
             try
@@ -585,6 +616,7 @@ namespace CourseWork
             }
         }
 
+        // Настройка заголовков и ширины колонок
         private void ConfigureGridColumns()
         {
             if (dgvClients.Columns.Count == 0)
@@ -624,6 +656,7 @@ namespace CourseWork
             colAddress.FillWeight = 170;
         }
 
+        // Фильтрация списка по поиску
         private void ApplyFilter()
         {
             if (bindingSource.DataSource == null)
@@ -649,6 +682,7 @@ namespace CourseWork
             UpdateTotalLabel();
         }
 
+        // Экранирование специальных символов для фильтра
         private string EscapeFilterValue(string value)
         {
             return value
@@ -658,11 +692,13 @@ namespace CourseWork
                 .Replace("*", "[*]");
         }
 
+        // Обновление текста с количеством записей
         private void UpdateTotalLabel()
         {
             lblTotal.Text = $"Записей: {bindingSource.Count}";
         }
 
+        // Заполнение полей справа при выборе строки
         private void DgvClients_SelectionChanged(object? sender, EventArgs e)
         {
             if (suppressSelectionChanged)
@@ -680,6 +716,7 @@ namespace CourseWork
             txtAddress.Text = rowView["connection_address"]?.ToString() ?? "";
         }
 
+        // Проверка введённых данных
         private bool ValidateInputs()
         {
             if (string.IsNullOrWhiteSpace(txtLastName.Text))
@@ -713,6 +750,7 @@ namespace CourseWork
             return true;
         }
 
+        // Добавление нового клиента
         private void AddClient()
         {
             if (!ValidateInputs())
@@ -759,6 +797,7 @@ namespace CourseWork
             }
         }
 
+        // Изменение выбранного клиента
         private void UpdateClient()
         {
             if (string.IsNullOrWhiteSpace(txtClientId.Text))
@@ -803,6 +842,7 @@ namespace CourseWork
             }
         }
 
+        // Удаление выбранного клиента
         private void DeleteClient()
         {
             if (string.IsNullOrWhiteSpace(txtClientId.Text))
@@ -846,6 +886,7 @@ namespace CourseWork
             }
         }
 
+        // Заполнение параметров SQL-команды
         private void FillClientParameters(SqlCommand command)
         {
             command.Parameters.Add("@last_name", SqlDbType.NVarChar, 50).Value = txtLastName.Text.Trim();
@@ -858,6 +899,7 @@ namespace CourseWork
             command.Parameters.Add("@connection_address", SqlDbType.NVarChar, 200).Value = txtAddress.Text.Trim();
         }
 
+        // Очистка полей формы
         private void ClearInputs()
         {
             suppressSelectionChanged = true;
@@ -883,6 +925,7 @@ namespace CourseWork
             txtLastName.Focus();
         }
 
+        // Освобождение картинки при закрытии формы
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             if (pictureBox != null && pictureBox.Image != null)
@@ -894,6 +937,7 @@ namespace CourseWork
             base.OnFormClosed(e);
         }
 
+        // Кастомная карточка с закруглёнными углами
         [DesignerCategory("Code")]
         private class ModernCard : Panel
         {
@@ -941,6 +985,7 @@ namespace CourseWork
                 RebuildRegion();
             }
 
+            // Перестроение формы карточки при изменении размера
             private void RebuildRegion()
             {
                 cachedPath?.Dispose();
@@ -983,6 +1028,7 @@ namespace CourseWork
                 base.Dispose(disposing);
             }
 
+            // Создание прямоугольника с закруглёнными углами
             private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
             {
                 int d = radius * 2;
@@ -998,6 +1044,7 @@ namespace CourseWork
             }
         }
 
+        // Кастомный блок изображения с режимом cover
         [DesignerCategory("Code")]
         private class CoverPictureBox : Control
         {
