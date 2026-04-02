@@ -3,15 +3,13 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Windows.Forms;
 
 namespace CourseWork
 {
     public partial class MainForm : Form
     {
-        // Палитра
+        // Основные цвета приложения
         private readonly Color appBackColor = Color.FromArgb(241, 245, 249);
         private readonly Color sidebarBackColor = Color.FromArgb(15, 23, 42);
         private readonly Color sidebarCardColor = Color.FromArgb(30, 41, 59);
@@ -20,6 +18,7 @@ namespace CourseWork
         private readonly Color titleColor = Color.FromArgb(15, 23, 42);
         private readonly Color mutedTextColor = Color.FromArgb(100, 116, 139);
 
+        // Акцентные цвета
         private readonly Color accentBlue = Color.FromArgb(14, 165, 233);
         private readonly Color accentCyan = Color.FromArgb(6, 182, 212);
         private readonly Color accentAmber = Color.FromArgb(245, 158, 11);
@@ -27,11 +26,14 @@ namespace CourseWork
         private readonly Color accentRose = Color.FromArgb(244, 63, 94);
         private readonly Color accentEmerald = Color.FromArgb(16, 185, 129);
 
+        // Элементы, которые используются в нескольких методах
         private Label lblDateTime = null!;
-        private PictureBox pictureBox = null!;
+        private CoverPictureBox pictureBox = null!;
 
+        // Таймер для часов
         private readonly System.Windows.Forms.Timer clockTimer = new System.Windows.Forms.Timer();
 
+        // Путь к главному изображению
         private readonly string bannerPath =
             Path.Combine(Application.StartupPath, "Images", "provider_main.png");
 
@@ -39,6 +41,7 @@ namespace CourseWork
         {
             InitializeComponent();
 
+            // Очищаем элементы дизайнера и собираем интерфейс кодом
             Controls.Clear();
 
             InitializeForm();
@@ -47,6 +50,7 @@ namespace CourseWork
             LoadBannerIfExists();
         }
 
+        // Первичная настройка формы
         private void InitializeForm()
         {
             Text = "Internet Provider - Главное меню";
@@ -62,6 +66,7 @@ namespace CourseWork
             DoubleBuffered = true;
         }
 
+        // Сборка интерфейса формы
         private void BuildInterface()
         {
             SuspendLayout();
@@ -75,6 +80,7 @@ namespace CourseWork
             ResumeLayout(false);
         }
 
+        // Левая боковая панель
         private Control BuildSidebar()
         {
             var sidebar = new Panel
@@ -95,6 +101,7 @@ namespace CourseWork
             logoCircle.Paint += (s, e) =>
             {
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
                 using var brush = new SolidBrush(accentBlue);
                 e.Graphics.FillEllipse(brush, 0, 0, logoCircle.Width - 1, logoCircle.Height - 1);
 
@@ -223,6 +230,7 @@ namespace CourseWork
             return sidebar;
         }
 
+        // Правая часть формы
         private Control BuildContent()
         {
             var content = new Panel
@@ -300,6 +308,7 @@ namespace CourseWork
                 RowCount = 1,
                 BackColor = Color.Transparent
             };
+
             bodyTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 61f));
             bodyTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 39f));
 
@@ -315,6 +324,7 @@ namespace CourseWork
             return content;
         }
 
+        // Карточка с разделами
         private Control BuildQuickAccessCard()
         {
             var card = new ModernCard
@@ -364,37 +374,37 @@ namespace CourseWork
                 "Клиенты",
                 "База абонентов и контактные данные",
                 accentBlue,
-                (s, e) => OpenSection("Клиенты", "ClientsForm", "Clients"));
+                (s, e) => OpenForm(new Clients()));
 
             var btnTariffs = CreateSectionButton(
                 "Тарифы",
                 "Скорость, стоимость и описание планов",
                 accentCyan,
-                (s, e) => OpenSection("Тарифы", "TariffsForm", "Tariffs"));
+                (s, e) => OpenForm(new Tariffs()));
 
             var btnContracts = CreateSectionButton(
                 "Договоры",
                 "Заключённые договоры и статусы",
                 accentViolet,
-                (s, e) => OpenSection("Договоры", "ContractsForm", "Contracts"));
+                (s, e) => OpenForm(new Contracts()));
 
             var btnPayments = CreateSectionButton(
                 "Платежи",
                 "История оплат и способы оплаты",
                 accentEmerald,
-                (s, e) => OpenSection("Платежи", "PaymentsForm", "Payments"));
+                (s, e) => OpenForm(new Payments()));
 
             var btnEquipment = CreateSectionButton(
                 "Оборудование",
                 "Выданное оборудование и серийные номера",
                 accentAmber,
-                (s, e) => OpenSection("Оборудование", "EquipmentForm", "Equipment"));
+                (s, e) => OpenForm(new Equipment()));
 
             var btnRequests = CreateSectionButton(
                 "Заявки",
                 "Обращения клиентов и текущие статусы",
                 accentRose,
-                (s, e) => OpenSection("Заявки", "RequestsForm", "Requests"));
+                (s, e) => OpenForm(new Requests()));
 
             grid.Controls.Add(WrapWithMargin(btnClients), 0, 0);
             grid.Controls.Add(WrapWithMargin(btnTariffs), 1, 0);
@@ -410,6 +420,7 @@ namespace CourseWork
             return card;
         }
 
+        // Карточка с изображением как в остальных формах
         private Control BuildImageCard()
         {
             var card = new ModernCard
@@ -422,18 +433,17 @@ namespace CourseWork
                 Padding = new Padding(0)
             };
 
-            pictureBox = new PictureBox
+            pictureBox = new CoverPictureBox
             {
                 Dock = DockStyle.Fill,
-                SizeMode = PictureBoxSizeMode.StretchImage,
-                BackColor = Color.Transparent
+                BackColor = Color.FromArgb(232, 240, 247)
             };
 
             card.Controls.Add(pictureBox);
-
             return card;
         }
 
+        // Обёртка с отступами для карточек разделов
         private Panel WrapWithMargin(Control control)
         {
             var panel = new Panel
@@ -445,9 +455,11 @@ namespace CourseWork
 
             control.Dock = DockStyle.Fill;
             panel.Controls.Add(control);
+
             return panel;
         }
 
+        // Кнопка боковой панели
         private Button CreateSidebarButton(string text, Color accent, EventHandler onClick)
         {
             var button = new Button
@@ -485,6 +497,7 @@ namespace CourseWork
             return button;
         }
 
+        // Кнопка-карточка раздела
         private SectionButton CreateSectionButton(
             string title,
             string subtitle,
@@ -502,6 +515,28 @@ namespace CourseWork
             return button;
         }
 
+        // Открытие выбранной формы
+        private void OpenForm(Form form)
+        {
+            try
+            {
+                using (form)
+                {
+                    form.StartPosition = FormStartPosition.CenterScreen;
+                    form.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Произошла ошибка при открытии раздела.\n\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        // Запуск часов
         private void StartClock()
         {
             UpdateClock();
@@ -510,12 +545,14 @@ namespace CourseWork
             clockTimer.Start();
         }
 
+        // Обновление даты и времени
         private void UpdateClock()
         {
             if (lblDateTime != null)
                 lblDateTime.Text = DateTime.Now.ToString("dd.MM.yyyy  •  HH:mm:ss");
         }
 
+        // Загрузка главной картинки
         private void LoadBannerIfExists()
         {
             try
@@ -532,56 +569,7 @@ namespace CourseWork
             }
         }
 
-        private void OpenSection(string sectionTitle, params string[] candidateTypeNames)
-        {
-            try
-            {
-                var assembly = Assembly.GetExecutingAssembly();
-
-                var formType = assembly
-                    .GetTypes()
-                    .Where(t => typeof(Form).IsAssignableFrom(t) && !t.IsAbstract)
-                    .FirstOrDefault(t =>
-                        candidateTypeNames.Any(name =>
-                            string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(t.FullName, name, StringComparison.OrdinalIgnoreCase) ||
-                            (t.FullName != null && t.FullName.EndsWith("." + name, StringComparison.OrdinalIgnoreCase))));
-
-                if (formType == null)
-                {
-                    MessageBox.Show(
-                        $"Форма раздела «{sectionTitle}» пока не найдена.\n\n" +
-                        $"Когда создашь нужный файл формы, кнопка начнёт открывать этот раздел автоматически.",
-                        "Раздел пока не создан",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-                    return;
-                }
-
-                if (Activator.CreateInstance(formType) is not Form form)
-                {
-                    MessageBox.Show(
-                        $"Не удалось создать форму для раздела «{sectionTitle}».",
-                        "Ошибка",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                    return;
-                }
-
-                form.StartPosition = FormStartPosition.CenterScreen;
-                form.ShowDialog(this);
-                form.Dispose();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "Произошла ошибка при открытии раздела.\n\n" + ex.Message,
-                    "Ошибка",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
-        }
-
+        // Освобождение ресурсов
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             clockTimer.Stop();
@@ -596,284 +584,357 @@ namespace CourseWork
             base.OnFormClosed(e);
         }
 
-[DesignerCategory("Code")]
-private class ModernCard : Panel
-{
-    private int radius = 24;
-    private Color borderColor = Color.FromArgb(214, 223, 235);
-    private GraphicsPath? cachedPath;
-
-    [Browsable(true)]
-    [Category("Appearance")]
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-    public int Radius
-    {
-        get => radius;
-        set
+        // Карточка с закруглёнными углами
+        [DesignerCategory("Code")]
+        private class ModernCard : Panel
         {
-            radius = value < 1 ? 1 : value;
-            RebuildRegion();
-            Invalidate();
-        }
-    }
+            private int radius = 24;
+            private Color borderColor = Color.FromArgb(214, 223, 235);
+            private GraphicsPath? cachedPath;
 
-    [Browsable(true)]
-    [Category("Appearance")]
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-    public Color BorderColor
-    {
-        get => borderColor;
-        set
-        {
-            borderColor = value;
-            Invalidate();
-        }
-    }
+            [Browsable(true)]
+            [Category("Appearance")]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+            public int Radius
+            {
+                get => radius;
+                set
+                {
+                    radius = value < 1 ? 1 : value;
+                    RebuildRegion();
+                    Invalidate();
+                }
+            }
 
-    public ModernCard()
-    {
-        DoubleBuffered = true;
-        ResizeRedraw = true;
-        BackColor = Color.White;
-    }
+            [Browsable(true)]
+            [Category("Appearance")]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+            public Color BorderColor
+            {
+                get => borderColor;
+                set
+                {
+                    borderColor = value;
+                    Invalidate();
+                }
+            }
 
-    protected override void OnSizeChanged(EventArgs e)
-    {
-        base.OnSizeChanged(e);
-        RebuildRegion();
-    }
+            public ModernCard()
+            {
+                DoubleBuffered = true;
+                ResizeRedraw = true;
+                BackColor = Color.White;
+            }
 
-    private void RebuildRegion()
-    {
-        cachedPath?.Dispose();
-        cachedPath = null;
+            protected override void OnSizeChanged(EventArgs e)
+            {
+                base.OnSizeChanged(e);
+                RebuildRegion();
+            }
 
-        if (Width <= 1 || Height <= 1)
-            return;
+            private void RebuildRegion()
+            {
+                cachedPath?.Dispose();
+                cachedPath = null;
 
-        cachedPath = GetRoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
+                if (Width <= 1 || Height <= 1)
+                    return;
 
-        Region?.Dispose();
-        Region = new Region(cachedPath);
-    }
+                cachedPath = GetRoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
 
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        base.OnPaint(e);
+                Region?.Dispose();
+                Region = new Region(cachedPath);
+            }
 
-        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
 
-        using var path = cachedPath != null
-            ? (GraphicsPath)cachedPath.Clone()
-            : GetRoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-        using var brush = new SolidBrush(BackColor);
-        using var pen = new Pen(BorderColor, 1.4f);
+                using var path = cachedPath != null
+                    ? (GraphicsPath)cachedPath.Clone()
+                    : GetRoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
 
-        e.Graphics.FillPath(brush, path);
-        e.Graphics.DrawPath(pen, path);
-    }
+                using var brush = new SolidBrush(BackColor);
+                using var pen = new Pen(BorderColor, 1.4f);
 
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            cachedPath?.Dispose();
-            Region?.Dispose();
-        }
+                e.Graphics.FillPath(brush, path);
+                e.Graphics.DrawPath(pen, path);
+            }
 
-        base.Dispose(disposing);
-    }
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    cachedPath?.Dispose();
+                    Region?.Dispose();
+                }
 
-    private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
-    {
-        int d = radius * 2;
-        var path = new GraphicsPath();
+                base.Dispose(disposing);
+            }
 
-        path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-        path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-        path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-        path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-        path.CloseFigure();
+            private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
+            {
+                int d = radius * 2;
+                var path = new GraphicsPath();
 
-        return path;
-    }
-}
+                path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+                path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+                path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+                path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+                path.CloseFigure();
 
-[DesignerCategory("Code")]
-private class SectionButton : Control
-{
-    private string title = "Раздел";
-    private string subtitle = "Описание раздела";
-    private Color accentColor = Color.FromArgb(14, 165, 233);
-
-    private bool isHovered;
-    private bool isPressed;
-
-    [Browsable(true)]
-    [Category("Appearance")]
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-    public string Title
-    {
-        get => title;
-        set
-        {
-            title = value;
-            Invalidate();
-        }
-    }
-
-    [Browsable(true)]
-    [Category("Appearance")]
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-    public string Subtitle
-    {
-        get => subtitle;
-        set
-        {
-            subtitle = value;
-            Invalidate();
-        }
-    }
-
-    [Browsable(true)]
-    [Category("Appearance")]
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-    public Color AccentColor
-    {
-        get => accentColor;
-        set
-        {
-            accentColor = value;
-            Invalidate();
-        }
-    }
-
-    public SectionButton()
-    {
-        DoubleBuffered = true;
-        Cursor = Cursors.Hand;
-        Size = new Size(320, 160);
-        Font = new Font("Segoe UI", 10f);
-
-        SetStyle(
-            ControlStyles.AllPaintingInWmPaint |
-            ControlStyles.OptimizedDoubleBuffer |
-            ControlStyles.ResizeRedraw |
-            ControlStyles.UserPaint,
-            true);
-    }
-
-    protected override void OnMouseEnter(EventArgs e)
-    {
-        base.OnMouseEnter(e);
-        isHovered = true;
-        Invalidate();
-    }
-
-    protected override void OnMouseLeave(EventArgs e)
-    {
-        base.OnMouseLeave(e);
-        isHovered = false;
-        isPressed = false;
-        Invalidate();
-    }
-
-    protected override void OnMouseDown(MouseEventArgs e)
-    {
-        base.OnMouseDown(e);
-        isPressed = true;
-        Invalidate();
-    }
-
-    protected override void OnMouseUp(MouseEventArgs e)
-    {
-        base.OnMouseUp(e);
-        isPressed = false;
-        Invalidate();
-    }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        base.OnPaint(e);
-
-        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-        Color back = Color.White;
-        Color border = Color.FromArgb(203, 213, 225);
-
-        if (isHovered)
-        {
-            back = Blend(Color.White, AccentColor, 0.08);
-            border = Blend(Color.FromArgb(203, 213, 225), AccentColor, 0.55);
+                return path;
+            }
         }
 
-        if (isPressed)
+        // Кастомная карточка-кнопка раздела
+        [DesignerCategory("Code")]
+        private class SectionButton : Control
         {
-            back = Blend(Color.White, AccentColor, 0.14);
-            border = Blend(Color.FromArgb(203, 213, 225), AccentColor, 0.75);
+            private string title = "Раздел";
+            private string subtitle = "Описание раздела";
+            private Color accentColor = Color.FromArgb(14, 165, 233);
+
+            private bool isHovered;
+            private bool isPressed;
+
+            [Browsable(true)]
+            [Category("Appearance")]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+            public string Title
+            {
+                get => title;
+                set
+                {
+                    title = value;
+                    Invalidate();
+                }
+            }
+
+            [Browsable(true)]
+            [Category("Appearance")]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+            public string Subtitle
+            {
+                get => subtitle;
+                set
+                {
+                    subtitle = value;
+                    Invalidate();
+                }
+            }
+
+            [Browsable(true)]
+            [Category("Appearance")]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+            public Color AccentColor
+            {
+                get => accentColor;
+                set
+                {
+                    accentColor = value;
+                    Invalidate();
+                }
+            }
+
+            public SectionButton()
+            {
+                DoubleBuffered = true;
+                Cursor = Cursors.Hand;
+                Size = new Size(320, 160);
+                Font = new Font("Segoe UI", 10f);
+
+                SetStyle(
+                    ControlStyles.AllPaintingInWmPaint |
+                    ControlStyles.OptimizedDoubleBuffer |
+                    ControlStyles.ResizeRedraw |
+                    ControlStyles.UserPaint,
+                    true);
+            }
+
+            protected override void OnMouseEnter(EventArgs e)
+            {
+                base.OnMouseEnter(e);
+                isHovered = true;
+                Invalidate();
+            }
+
+            protected override void OnMouseLeave(EventArgs e)
+            {
+                base.OnMouseLeave(e);
+                isHovered = false;
+                isPressed = false;
+                Invalidate();
+            }
+
+            protected override void OnMouseDown(MouseEventArgs e)
+            {
+                base.OnMouseDown(e);
+                isPressed = true;
+                Invalidate();
+            }
+
+            protected override void OnMouseUp(MouseEventArgs e)
+            {
+                base.OnMouseUp(e);
+                isPressed = false;
+                Invalidate();
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                Color back = Color.White;
+                Color border = Color.FromArgb(203, 213, 225);
+
+                if (isHovered)
+                {
+                    back = Blend(Color.White, AccentColor, 0.08);
+                    border = Blend(Color.FromArgb(203, 213, 225), AccentColor, 0.55);
+                }
+
+                if (isPressed)
+                {
+                    back = Blend(Color.White, AccentColor, 0.14);
+                    border = Blend(Color.FromArgb(203, 213, 225), AccentColor, 0.75);
+                }
+
+                var rect = new Rectangle(0, 0, Width - 1, Height - 1);
+
+                using var path = GetRoundedPath(rect, 24);
+                using var brush = new SolidBrush(back);
+                using var pen = new Pen(border, 2f);
+
+                e.Graphics.FillPath(brush, path);
+                e.Graphics.DrawPath(pen, path);
+
+                using var accentBrush = new SolidBrush(AccentColor);
+                e.Graphics.FillEllipse(accentBrush, 18, 18, 14, 14);
+
+                using var titleBrush = new SolidBrush(Color.FromArgb(15, 23, 42));
+                using var subtitleBrush = new SolidBrush(Color.FromArgb(100, 116, 139));
+                using var arrowBrush = new SolidBrush(AccentColor);
+                using var titleFont = new Font("Segoe UI Semibold", 15f, FontStyle.Bold);
+                using var subFont = new Font("Segoe UI", 10f, FontStyle.Regular);
+                using var arrowFont = new Font("Segoe UI Semibold", 18f, FontStyle.Bold);
+
+                e.Graphics.DrawString(
+                    Title,
+                    titleFont,
+                    titleBrush,
+                    new RectangleF(18, 42, Width - 70, 36));
+
+                e.Graphics.DrawString(
+                    Subtitle,
+                    subFont,
+                    subtitleBrush,
+                    new RectangleF(18, 82, Width - 70, 48));
+
+                e.Graphics.DrawString(
+                    "→",
+                    arrowFont,
+                    arrowBrush,
+                    new RectangleF(Width - 48, Height - 46, 24, 24));
+            }
+
+            private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
+            {
+                int d = radius * 2;
+                var path = new GraphicsPath();
+
+                path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+                path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+                path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+                path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+                path.CloseFigure();
+
+                return path;
+            }
+
+            private static Color Blend(Color from, Color to, double amount)
+            {
+                int r = (int)(from.R + (to.R - from.R) * amount);
+                int g = (int)(from.G + (to.G - from.G) * amount);
+                int b = (int)(from.B + (to.B - from.B) * amount);
+
+                return Color.FromArgb(r, g, b);
+            }
         }
 
-        var rect = new Rectangle(0, 0, Width - 1, Height - 1);
+        // Блок изображения с режимом "cover", как в остальных формах
+        [DesignerCategory("Code")]
+        private class CoverPictureBox : Control
+        {
+            private Image? image;
 
-        using var path = GetRoundedPath(rect, 24);
-        using var brush = new SolidBrush(back);
-        using var pen = new Pen(border, 2f);
+            [Browsable(false)]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+            public Image? Image
+            {
+                get => image;
+                set
+                {
+                    image = value;
+                    Invalidate();
+                }
+            }
 
-        e.Graphics.FillPath(brush, path);
-        e.Graphics.DrawPath(pen, path);
+            public CoverPictureBox()
+            {
+                DoubleBuffered = true;
+                ResizeRedraw = true;
 
-        using var accentBrush = new SolidBrush(AccentColor);
-        e.Graphics.FillEllipse(accentBrush, 18, 18, 14, 14);
+                SetStyle(
+                    ControlStyles.AllPaintingInWmPaint |
+                    ControlStyles.OptimizedDoubleBuffer |
+                    ControlStyles.ResizeRedraw |
+                    ControlStyles.UserPaint,
+                    true);
+            }
 
-        using var titleBrush = new SolidBrush(Color.FromArgb(15, 23, 42));
-        using var subtitleBrush = new SolidBrush(Color.FromArgb(100, 116, 139));
-        using var arrowBrush = new SolidBrush(AccentColor);
-        using var titleFont = new Font("Segoe UI Semibold", 15f, FontStyle.Bold);
-        using var subFont = new Font("Segoe UI", 10f, FontStyle.Regular);
-        using var arrowFont = new Font("Segoe UI Semibold", 18f, FontStyle.Bold);
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
 
-        e.Graphics.DrawString(
-            Title,
-            titleFont,
-            titleBrush,
-            new RectangleF(18, 42, Width - 70, 36));
+                e.Graphics.Clear(BackColor);
+                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
 
-        e.Graphics.DrawString(
-            Subtitle,
-            subFont,
-            subtitleBrush,
-            new RectangleF(18, 82, Width - 70, 48));
+                Image? img = Image;
 
-        e.Graphics.DrawString(
-            "→",
-            arrowFont,
-            arrowBrush,
-            new RectangleF(Width - 48, Height - 46, 24, 24));
-    }
+                if (img == null || Width <= 0 || Height <= 0)
+                    return;
 
-    private static GraphicsPath GetRoundedPath(Rectangle rect, int radius)
-    {
-        int d = radius * 2;
-        var path = new GraphicsPath();
+                float imageRatio = (float)img.Width / img.Height;
+                float controlRatio = (float)Width / Height;
 
-        path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-        path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-        path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-        path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-        path.CloseFigure();
+                RectangleF srcRect;
 
-        return path;
-    }
+                if (imageRatio > controlRatio)
+                {
+                    float srcWidth = img.Height * controlRatio;
+                    float srcX = (img.Width - srcWidth) / 2f;
+                    srcRect = new RectangleF(srcX, 0, srcWidth, img.Height);
+                }
+                else
+                {
+                    float srcHeight = img.Width / controlRatio;
+                    float srcY = (img.Height - srcHeight) / 2f;
+                    srcRect = new RectangleF(0, srcY, img.Width, srcHeight);
+                }
 
-    private static Color Blend(Color from, Color to, double amount)
-    {
-        int r = (int)(from.R + (to.R - from.R) * amount);
-        int g = (int)(from.G + (to.G - from.G) * amount);
-        int b = (int)(from.B + (to.B - from.B) * amount);
-
-        return Color.FromArgb(r, g, b);
-    }
-}
+                e.Graphics.DrawImage(
+                    img,
+                    new Rectangle(0, 0, Width, Height),
+                    srcRect,
+                    GraphicsUnit.Pixel);
+            }
+        }
     }
 }
