@@ -3,13 +3,14 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Globalization;
 using System.IO;
 using System.Windows.Forms;
 using Microsoft.Data.SqlClient;
 
 namespace CourseWork
 {
-    public partial class Contracts : Form
+    public partial class Payments : Form
     {
         private readonly string connectionString =
             @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=InternetProviderDB;Integrated Security=True;Connect Timeout=30;Encrypt=False";
@@ -28,30 +29,28 @@ namespace CourseWork
         private readonly Color accentAmber = Color.FromArgb(245, 158, 11);
         private readonly Color accentRose = Color.FromArgb(244, 63, 94);
 
-        private readonly DataTable contractsTable = new DataTable();
-        private readonly DataTable clientsLookupTable = new DataTable();
-        private readonly DataTable tariffsLookupTable = new DataTable();
+        private readonly DataTable paymentsTable = new DataTable();
+        private readonly DataTable contractsLookupTable = new DataTable();
         private readonly BindingSource bindingSource = new BindingSource();
 
-        private DataGridView dgvContracts = null!;
+        private DataGridView dgvPayments = null!;
         private TextBox txtSearch = null!;
         private Label lblTotal = null!;
 
-        private TextBox txtContractId = null!;
-        private TextBox txtContractNumber = null!;
-        private DateTimePicker dtpDateSigned = null!;
-        private ComboBox cmbStatus = null!;
-        private ComboBox cmbClient = null!;
-        private ComboBox cmbTariff = null!;
+        private TextBox txtPaymentId = null!;
+        private ComboBox cmbContract = null!;
+        private DateTimePicker dtpPaymentDate = null!;
+        private TextBox txtAmount = null!;
+        private ComboBox cmbPaymentMethod = null!;
 
         private bool suppressSelectionChanged = false;
 
         private CoverPictureBox pictureBox = null!;
 
         private readonly string bannerPath =
-            Path.Combine(Application.StartupPath, "Images", "contracts_banner.png");
+            Path.Combine(Application.StartupPath, "Images", "payments_banner.png");
 
-        public Contracts()
+        public Payments()
         {
             InitializeComponent();
 
@@ -59,16 +58,16 @@ namespace CourseWork
 
             InitializeForm();
             BuildInterface();
-            FillStatuses();
+            FillPaymentMethods();
             LoadBannerIfExists();
             LoadLookupData();
-            LoadContracts();
+            LoadPayments();
         }
 
         private void InitializeForm()
         {
-            Text = "Contracts - Договоры";
-            Name = "Contracts";
+            Text = "Payments - Платежи";
+            Name = "Payments";
             StartPosition = FormStartPosition.CenterScreen;
             WindowState = FormWindowState.Maximized;
             MinimumSize = new Size(1500, 940);
@@ -114,7 +113,7 @@ namespace CourseWork
             var lblTitle = new Label
             {
                 AutoSize = false,
-                Text = "Договоры",
+                Text = "Платежи",
                 ForeColor = titleColor,
                 Font = new Font("Segoe UI Semibold", 28f, FontStyle.Bold),
                 Location = new Point(0, 0),
@@ -124,11 +123,11 @@ namespace CourseWork
             var lblSubtitle = new Label
             {
                 AutoSize = false,
-                Text = "Управление договорами интернет-провайдера",
+                Text = "Управление оплатами по договорам интернет-провайдера",
                 ForeColor = mutedTextColor,
                 Font = new Font("Segoe UI", 12f, FontStyle.Regular),
                 Location = new Point(2, 52),
-                Size = new Size(680, 28)
+                Size = new Size(760, 28)
             };
 
             var btnRefresh = CreateActionButton("Обновить", accentBlue, Color.White, (s, e) => RefreshAllData());
@@ -200,11 +199,11 @@ namespace CourseWork
             var lblTitle = new Label
             {
                 AutoSize = false,
-                Text = "Список договоров",
+                Text = "Список платежей",
                 ForeColor = titleColor,
                 Font = new Font("Segoe UI Semibold", 18f, FontStyle.Bold),
                 Location = new Point(0, 0),
-                Size = new Size(320, 34)
+                Size = new Size(300, 34)
             };
 
             lblTotal = new Label
@@ -246,7 +245,7 @@ namespace CourseWork
             topBar.Resize += (s, e) => RepositionSearch();
             RepositionSearch();
 
-            dgvContracts = new DataGridView
+            dgvPayments = new DataGridView
             {
                 Dock = DockStyle.Fill,
                 BackgroundColor = cardBackColor,
@@ -264,27 +263,27 @@ namespace CourseWork
                 EnableHeadersVisualStyles = false
             };
 
-            dgvContracts.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
-            dgvContracts.ColumnHeadersDefaultCellStyle.ForeColor = titleColor;
-            dgvContracts.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 10.5f, FontStyle.Bold);
-            dgvContracts.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dgvContracts.ColumnHeadersHeight = 46;
-            dgvContracts.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            dgvPayments.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
+            dgvPayments.ColumnHeadersDefaultCellStyle.ForeColor = titleColor;
+            dgvPayments.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 10.5f, FontStyle.Bold);
+            dgvPayments.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dgvPayments.ColumnHeadersHeight = 46;
+            dgvPayments.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
 
-            dgvContracts.DefaultCellStyle.BackColor = Color.White;
-            dgvContracts.DefaultCellStyle.ForeColor = textColor;
-            dgvContracts.DefaultCellStyle.SelectionBackColor = Color.FromArgb(224, 242, 254);
-            dgvContracts.DefaultCellStyle.SelectionForeColor = titleColor;
-            dgvContracts.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Regular);
-            dgvContracts.DefaultCellStyle.Padding = new Padding(6, 4, 6, 4);
+            dgvPayments.DefaultCellStyle.BackColor = Color.White;
+            dgvPayments.DefaultCellStyle.ForeColor = textColor;
+            dgvPayments.DefaultCellStyle.SelectionBackColor = Color.FromArgb(224, 242, 254);
+            dgvPayments.DefaultCellStyle.SelectionForeColor = titleColor;
+            dgvPayments.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Regular);
+            dgvPayments.DefaultCellStyle.Padding = new Padding(6, 4, 6, 4);
 
-            dgvContracts.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 252, 255);
-            dgvContracts.RowTemplate.Height = 42;
+            dgvPayments.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 252, 255);
+            dgvPayments.RowTemplate.Height = 42;
 
-            dgvContracts.SelectionChanged += DgvContracts_SelectionChanged;
-            dgvContracts.DataBindingComplete += (s, e) => ConfigureGridColumns();
+            dgvPayments.SelectionChanged += DgvPayments_SelectionChanged;
+            dgvPayments.DataBindingComplete += (s, e) => ConfigureGridColumns();
 
-            card.Controls.Add(dgvContracts);
+            card.Controls.Add(dgvPayments);
             card.Controls.Add(topBar);
 
             return card;
@@ -351,7 +350,7 @@ namespace CourseWork
             {
                 Dock = DockStyle.Top,
                 Height = 34,
-                Text = "Карточка договора",
+                Text = "Карточка платежа",
                 ForeColor = titleColor,
                 Font = new Font("Segoe UI Semibold", 18f, FontStyle.Bold)
             };
@@ -360,7 +359,7 @@ namespace CourseWork
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 13,
+                RowCount = 11,
                 BackColor = Color.Transparent,
                 Padding = new Padding(0, 8, 0, 0)
             };
@@ -377,34 +376,28 @@ namespace CourseWork
             formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
             formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
             formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f));
-            formPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 42f));
             formPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-            txtContractId = CreateTextBox(true);
-            txtContractNumber = CreateTextBox();
-            dtpDateSigned = CreateDatePicker();
-            cmbStatus = CreateComboBox(true);
-            cmbClient = CreateComboBox();
-            cmbTariff = CreateComboBox();
+            txtPaymentId = CreateTextBox(true);
+            cmbContract = CreateComboBox();
+            dtpPaymentDate = CreateDatePicker();
+            txtAmount = CreateTextBox();
+            cmbPaymentMethod = CreateComboBox(true);
 
-            formPanel.Controls.Add(CreateFieldLabel("ID договора"), 0, 0);
-            formPanel.Controls.Add(txtContractId, 0, 1);
+            formPanel.Controls.Add(CreateFieldLabel("ID платежа"), 0, 0);
+            formPanel.Controls.Add(txtPaymentId, 0, 1);
 
-            formPanel.Controls.Add(CreateFieldLabel("Номер договора"), 0, 2);
-            formPanel.Controls.Add(txtContractNumber, 0, 3);
+            formPanel.Controls.Add(CreateFieldLabel("Договор"), 0, 2);
+            formPanel.Controls.Add(cmbContract, 0, 3);
 
-            formPanel.Controls.Add(CreateFieldLabel("Дата заключения"), 0, 4);
-            formPanel.Controls.Add(dtpDateSigned, 0, 5);
+            formPanel.Controls.Add(CreateFieldLabel("Дата оплаты"), 0, 4);
+            formPanel.Controls.Add(dtpPaymentDate, 0, 5);
 
-            formPanel.Controls.Add(CreateFieldLabel("Статус договора"), 0, 6);
-            formPanel.Controls.Add(cmbStatus, 0, 7);
+            formPanel.Controls.Add(CreateFieldLabel("Сумма"), 0, 6);
+            formPanel.Controls.Add(txtAmount, 0, 7);
 
-            formPanel.Controls.Add(CreateFieldLabel("Клиент"), 0, 8);
-            formPanel.Controls.Add(cmbClient, 0, 9);
-
-            formPanel.Controls.Add(CreateFieldLabel("Тариф"), 0, 10);
-            formPanel.Controls.Add(cmbTariff, 0, 11);
+            formPanel.Controls.Add(CreateFieldLabel("Способ оплаты"), 0, 8);
+            formPanel.Controls.Add(cmbPaymentMethod, 0, 9);
 
             var buttons = new TableLayoutPanel
             {
@@ -421,9 +414,9 @@ namespace CourseWork
             buttons.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             buttons.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
-            var btnAdd = CreateActionButton("Добавить", accentBlue, Color.White, (s, e) => AddContract());
-            var btnUpdate = CreateActionButton("Изменить", accentEmerald, Color.White, (s, e) => UpdateContract());
-            var btnDelete = CreateActionButton("Удалить", accentRose, Color.White, (s, e) => DeleteContract());
+            var btnAdd = CreateActionButton("Добавить", accentBlue, Color.White, (s, e) => AddPayment());
+            var btnUpdate = CreateActionButton("Изменить", accentEmerald, Color.White, (s, e) => UpdatePayment());
+            var btnDelete = CreateActionButton("Удалить", accentRose, Color.White, (s, e) => DeletePayment());
             var btnClear = CreateActionButton("Очистить", Color.White, titleColor, (s, e) => ClearInputs(), borderColor);
 
             buttons.Controls.Add(WrapButton(btnAdd), 0, 0);
@@ -566,18 +559,18 @@ namespace CourseWork
             return button;
         }
 
-        private void FillStatuses()
+        private void FillPaymentMethods()
         {
-            cmbStatus.Items.Clear();
-            cmbStatus.Items.AddRange(new object[]
+            cmbPaymentMethod.Items.Clear();
+            cmbPaymentMethod.Items.AddRange(new object[]
             {
-                "Активен",
-                "На подключении",
-                "Приостановлен",
-                "Расторгнут"
+                "Наличные",
+                "Банковская карта",
+                "Банковский перевод",
+                "Онлайн-оплата"
             });
 
-            cmbStatus.Text = "Активен";
+            cmbPaymentMethod.Text = "Банковская карта";
         }
 
         private void LoadBannerIfExists()
@@ -599,7 +592,7 @@ namespace CourseWork
         private void RefreshAllData()
         {
             LoadLookupData();
-            LoadContracts();
+            LoadPayments();
         }
 
         private void LoadLookupData()
@@ -609,87 +602,12 @@ namespace CourseWork
                 using var connection = new SqlConnection(connectionString);
                 connection.Open();
 
-                using (var clientsAdapter = new SqlDataAdapter(
-                    @"SELECT
-                        client_id,
-                        CONCAT(
-                            last_name,
-                            N' ',
-                            first_name,
-                            CASE
-                                WHEN middle_name IS NULL OR LTRIM(RTRIM(middle_name)) = N'' THEN N''
-                                ELSE N' ' + middle_name
-                            END
-                        ) AS display_name
-                      FROM dbo.Clients
-                      ORDER BY last_name, first_name, middle_name", connection))
-                {
-                    clientsLookupTable.Clear();
-                    clientsAdapter.Fill(clientsLookupTable);
-                }
-
-                using (var tariffsAdapter = new SqlDataAdapter(
-                    @"SELECT
-                        tariff_id,
-                        CONCAT(
-                            tariff_name,
-                            N' — ',
-                            internet_speed,
-                            N' • ',
-                            CONVERT(nvarchar(20), CAST(monthly_fee AS decimal(10,2))),
-                            N' ₽'
-                        ) AS display_name
-                      FROM dbo.Tariffs
-                      ORDER BY tariff_name", connection))
-                {
-                    tariffsLookupTable.Clear();
-                    tariffsAdapter.Fill(tariffsLookupTable);
-                }
-
-                cmbClient.DataSource = null;
-                cmbClient.DisplayMember = "display_name";
-                cmbClient.ValueMember = "client_id";
-                cmbClient.DataSource = clientsLookupTable;
-
-                cmbTariff.DataSource = null;
-                cmbTariff.DisplayMember = "display_name";
-                cmbTariff.ValueMember = "tariff_id";
-                cmbTariff.DataSource = tariffsLookupTable;
-
-                if (clientsLookupTable.Rows.Count > 0)
-                    cmbClient.SelectedIndex = 0;
-                else
-                    cmbClient.SelectedIndex = -1;
-
-                if (tariffsLookupTable.Rows.Count > 0)
-                    cmbTariff.SelectedIndex = 0;
-                else
-                    cmbTariff.SelectedIndex = -1;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "Не удалось загрузить списки клиентов и тарифов.\n\n" + ex.Message,
-                    "Ошибка",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
-        }
-
-        private void LoadContracts()
-        {
-            try
-            {
-                using var connection = new SqlConnection(connectionString);
                 using var adapter = new SqlDataAdapter(
                     @"SELECT
                         c.contract_id,
-                        c.contract_number,
-                        c.date_signed,
-                        c.contract_status,
-                        c.client_id,
-                        c.tariff_id,
                         CONCAT(
+                            c.contract_number,
+                            N' — ',
                             cl.last_name,
                             N' ',
                             cl.first_name,
@@ -697,26 +615,23 @@ namespace CourseWork
                                 WHEN cl.middle_name IS NULL OR LTRIM(RTRIM(cl.middle_name)) = N'' THEN N''
                                 ELSE N' ' + cl.middle_name
                             END
-                        ) AS client_full_name,
-                        t.tariff_name,
-                        t.internet_speed,
-                        t.monthly_fee
+                        ) AS display_name
                       FROM dbo.Contracts c
                       INNER JOIN dbo.Clients cl ON cl.client_id = c.client_id
-                      INNER JOIN dbo.Tariffs t ON t.tariff_id = c.tariff_id
-                      ORDER BY c.date_signed DESC, c.contract_id DESC", connection);
+                      ORDER BY c.contract_number", connection);
 
-                contractsTable.Clear();
-                adapter.Fill(contractsTable);
+                contractsLookupTable.Clear();
+                adapter.Fill(contractsLookupTable);
 
-                bindingSource.DataSource = contractsTable;
-                dgvContracts.DataSource = bindingSource;
+                cmbContract.DataSource = null;
+                cmbContract.DisplayMember = "display_name";
+                cmbContract.ValueMember = "contract_id";
+                cmbContract.DataSource = contractsLookupTable;
 
-                UpdateTotalLabel();
-                ClearInputs();
-
-                if (dgvContracts.Rows.Count > 0)
-                    SelectFirstRow();
+                if (contractsLookupTable.Rows.Count > 0)
+                    cmbContract.SelectedIndex = 0;
+                else
+                    cmbContract.SelectedIndex = -1;
             }
             catch (Exception ex)
             {
@@ -728,60 +643,98 @@ namespace CourseWork
             }
         }
 
+        private void LoadPayments()
+        {
+            try
+            {
+                using var connection = new SqlConnection(connectionString);
+                using var adapter = new SqlDataAdapter(
+                    @"SELECT
+                        p.payment_id,
+                        p.contract_id,
+                        c.contract_number,
+                        CONCAT(
+                            cl.last_name,
+                            N' ',
+                            cl.first_name,
+                            CASE
+                                WHEN cl.middle_name IS NULL OR LTRIM(RTRIM(cl.middle_name)) = N'' THEN N''
+                                ELSE N' ' + cl.middle_name
+                            END
+                        ) AS client_full_name,
+                        p.payment_date,
+                        p.amount,
+                        p.payment_method
+                      FROM dbo.Payments p
+                      INNER JOIN dbo.Contracts c ON c.contract_id = p.contract_id
+                      INNER JOIN dbo.Clients cl ON cl.client_id = c.client_id
+                      ORDER BY p.payment_date DESC, p.payment_id DESC", connection);
+
+                paymentsTable.Clear();
+                adapter.Fill(paymentsTable);
+
+                bindingSource.DataSource = paymentsTable;
+                dgvPayments.DataSource = bindingSource;
+
+                UpdateTotalLabel();
+                ClearInputs();
+
+                if (dgvPayments.Rows.Count > 0)
+                    SelectFirstRow();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Не удалось загрузить список платежей.\n\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
         private void ConfigureGridColumns()
         {
-            if (dgvContracts.Columns.Count == 0)
+            if (dgvPayments.Columns.Count == 0)
                 return;
 
-            DataGridViewColumn? colContractId = dgvContracts.Columns["contract_id"];
-            DataGridViewColumn? colContractNumber = dgvContracts.Columns["contract_number"];
-            DataGridViewColumn? colDateSigned = dgvContracts.Columns["date_signed"];
-            DataGridViewColumn? colStatus = dgvContracts.Columns["contract_status"];
-            DataGridViewColumn? colClientId = dgvContracts.Columns["client_id"];
-            DataGridViewColumn? colTariffId = dgvContracts.Columns["tariff_id"];
-            DataGridViewColumn? colClientName = dgvContracts.Columns["client_full_name"];
-            DataGridViewColumn? colTariffName = dgvContracts.Columns["tariff_name"];
-            DataGridViewColumn? colInternetSpeed = dgvContracts.Columns["internet_speed"];
-            DataGridViewColumn? colMonthlyFee = dgvContracts.Columns["monthly_fee"];
+            DataGridViewColumn? colPaymentId = dgvPayments.Columns["payment_id"];
+            DataGridViewColumn? colContractId = dgvPayments.Columns["contract_id"];
+            DataGridViewColumn? colContractNumber = dgvPayments.Columns["contract_number"];
+            DataGridViewColumn? colClientName = dgvPayments.Columns["client_full_name"];
+            DataGridViewColumn? colPaymentDate = dgvPayments.Columns["payment_date"];
+            DataGridViewColumn? colAmount = dgvPayments.Columns["amount"];
+            DataGridViewColumn? colPaymentMethod = dgvPayments.Columns["payment_method"];
 
-            if (colContractId == null ||
+            if (colPaymentId == null ||
+                colContractId == null ||
                 colContractNumber == null ||
-                colDateSigned == null ||
-                colStatus == null ||
-                colClientId == null ||
-                colTariffId == null ||
                 colClientName == null ||
-                colTariffName == null ||
-                colInternetSpeed == null ||
-                colMonthlyFee == null)
+                colPaymentDate == null ||
+                colAmount == null ||
+                colPaymentMethod == null)
                 return;
 
-            colContractId.HeaderText = "ID";
+            colPaymentId.HeaderText = "ID";
             colContractNumber.HeaderText = "Номер договора";
-            colDateSigned.HeaderText = "Дата заключения";
-            colStatus.HeaderText = "Статус";
             colClientName.HeaderText = "Клиент";
-            colTariffName.HeaderText = "Тариф";
-            colInternetSpeed.HeaderText = "Скорость интернета";
-            colMonthlyFee.HeaderText = "Абонентская плата";
+            colPaymentDate.HeaderText = "Дата оплаты";
+            colAmount.HeaderText = "Сумма";
+            colPaymentMethod.HeaderText = "Способ оплаты";
 
-            colClientId.Visible = false;
-            colTariffId.Visible = false;
+            colContractId.Visible = false;
 
-            colContractId.FillWeight = 45;
+            colPaymentId.FillWeight = 45;
             colContractNumber.FillWeight = 95;
-            colDateSigned.FillWeight = 80;
-            colStatus.FillWeight = 85;
             colClientName.FillWeight = 150;
-            colTariffName.FillWeight = 110;
-            colInternetSpeed.FillWeight = 100;
-            colMonthlyFee.FillWeight = 95;
+            colPaymentDate.FillWeight = 85;
+            colAmount.FillWeight = 80;
+            colPaymentMethod.FillWeight = 110;
 
-            colDateSigned.DefaultCellStyle.Format = "dd.MM.yyyy";
-            colDateSigned.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colPaymentDate.DefaultCellStyle.Format = "dd.MM.yyyy";
+            colPaymentDate.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-            colMonthlyFee.DefaultCellStyle.Format = "N2";
-            colMonthlyFee.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            colAmount.DefaultCellStyle.Format = "N2";
+            colAmount.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         }
 
         private void ApplyFilter()
@@ -799,12 +752,10 @@ namespace CourseWork
             {
                 bindingSource.Filter =
                     $"contract_number LIKE '%{search}%' " +
-                    $"OR Convert(date_signed, 'System.String') LIKE '%{search}%' " +
-                    $"OR contract_status LIKE '%{search}%' " +
                     $"OR client_full_name LIKE '%{search}%' " +
-                    $"OR tariff_name LIKE '%{search}%' " +
-                    $"OR internet_speed LIKE '%{search}%' " +
-                    $"OR Convert(monthly_fee, 'System.String') LIKE '%{search}%'";
+                    $"OR Convert(payment_date, 'System.String') LIKE '%{search}%' " +
+                    $"OR Convert(amount, 'System.String') LIKE '%{search}%' " +
+                    $"OR payment_method LIKE '%{search}%'";
             }
 
             UpdateTotalLabel();
@@ -826,53 +777,50 @@ namespace CourseWork
 
         private void SelectFirstRow()
         {
-            if (dgvContracts.Rows.Count == 0)
+            if (dgvPayments.Rows.Count == 0)
                 return;
 
-            var row = dgvContracts.Rows[0];
+            var row = dgvPayments.Rows[0];
             DataGridViewCell? firstVisibleCell = null;
 
-           foreach (DataGridViewCell cell in row.Cells)
-{
-            DataGridViewColumn? column = cell.OwningColumn;
-
-            if (column != null && column.Visible)
+            foreach (DataGridViewColumn column in dgvPayments.Columns)
             {
-                firstVisibleCell = cell;
+                if (!column.Visible)
+                    continue;
+
+                firstVisibleCell = row.Cells[column.Index];
                 break;
             }
-}
 
             if (firstVisibleCell != null)
-                dgvContracts.CurrentCell = firstVisibleCell;
+                dgvPayments.CurrentCell = firstVisibleCell;
 
             row.Selected = true;
         }
 
-        private void DgvContracts_SelectionChanged(object? sender, EventArgs e)
+        private void DgvPayments_SelectionChanged(object? sender, EventArgs e)
         {
             if (suppressSelectionChanged)
                 return;
 
-            if (dgvContracts.CurrentRow?.DataBoundItem is not DataRowView rowView)
+            if (dgvPayments.CurrentRow?.DataBoundItem is not DataRowView rowView)
                 return;
 
-            txtContractId.Text = rowView["contract_id"]?.ToString() ?? "";
-            txtContractNumber.Text = rowView["contract_number"]?.ToString() ?? "";
-            cmbStatus.Text = rowView["contract_status"]?.ToString() ?? "";
+            txtPaymentId.Text = rowView["payment_id"]?.ToString() ?? "";
+            txtAmount.Text = rowView["amount"]?.ToString() ?? "";
+            cmbPaymentMethod.Text = rowView["payment_method"]?.ToString() ?? "";
 
-            if (rowView["date_signed"] != DBNull.Value &&
-                DateTime.TryParse(rowView["date_signed"]?.ToString(), out DateTime signedDate))
+            if (rowView["payment_date"] != DBNull.Value &&
+                DateTime.TryParse(rowView["payment_date"]?.ToString(), out DateTime paymentDate))
             {
-                dtpDateSigned.Value = signedDate;
+                dtpPaymentDate.Value = paymentDate;
             }
             else
             {
-                dtpDateSigned.Value = DateTime.Today;
+                dtpPaymentDate.Value = DateTime.Today;
             }
 
-            SetComboSelectedValueSafe(cmbClient, rowView["client_id"]);
-            SetComboSelectedValueSafe(cmbTariff, rowView["tariff_id"]);
+            SetComboSelectedValueSafe(cmbContract, rowView["contract_id"]);
         }
 
         private void SetComboSelectedValueSafe(ComboBox comboBox, object? value)
@@ -909,74 +857,68 @@ namespace CourseWork
             return int.TryParse(comboBox.SelectedValue.ToString(), out value);
         }
 
+        private bool TryParseAmount(string value, out decimal result)
+        {
+            if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.CurrentCulture, out result))
+                return true;
+
+            if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out result))
+                return true;
+
+            return false;
+        }
+
         private bool ValidateInputs()
         {
-            if (clientsLookupTable.Rows.Count == 0)
+            if (contractsLookupTable.Rows.Count == 0)
             {
                 MessageBox.Show(
-                    "В базе нет клиентов.\nСначала добавьте хотя бы одного клиента.",
+                    "В базе нет договоров.\nСначала добавьте хотя бы один договор.",
                     "Проверка",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
                 return false;
             }
 
-            if (tariffsLookupTable.Rows.Count == 0)
+            if (!TryGetSelectedInt(cmbContract, out _))
             {
-                MessageBox.Show(
-                    "В базе нет тарифов.\nСначала добавьте хотя бы один тариф.",
-                    "Проверка",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                MessageBox.Show("Выберите договор.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                cmbContract.Focus();
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(txtContractNumber.Text))
+            if (string.IsNullOrWhiteSpace(txtAmount.Text))
             {
-                MessageBox.Show("Введите номер договора.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtContractNumber.Focus();
+                MessageBox.Show("Введите сумму платежа.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtAmount.Focus();
                 return false;
             }
 
-            if (txtContractNumber.Text.Trim().Length > 30)
+            if (!TryParseAmount(txtAmount.Text.Trim(), out _))
             {
-                MessageBox.Show("Номер договора не должен превышать 30 символов.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtContractNumber.Focus();
+                MessageBox.Show("Сумма платежа должна быть числом.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtAmount.Focus();
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(cmbStatus.Text))
+            if (string.IsNullOrWhiteSpace(cmbPaymentMethod.Text))
             {
-                MessageBox.Show("Введите или выберите статус договора.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                cmbStatus.Focus();
+                MessageBox.Show("Введите или выберите способ оплаты.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                cmbPaymentMethod.Focus();
                 return false;
             }
 
-            if (cmbStatus.Text.Trim().Length > 50)
+            if (cmbPaymentMethod.Text.Trim().Length > 50)
             {
-                MessageBox.Show("Статус договора не должен превышать 50 символов.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                cmbStatus.Focus();
-                return false;
-            }
-
-            if (!TryGetSelectedInt(cmbClient, out _))
-            {
-                MessageBox.Show("Выберите клиента.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                cmbClient.Focus();
-                return false;
-            }
-
-            if (!TryGetSelectedInt(cmbTariff, out _))
-            {
-                MessageBox.Show("Выберите тариф.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                cmbTariff.Focus();
+                MessageBox.Show("Способ оплаты не должен превышать 50 символов.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                cmbPaymentMethod.Focus();
                 return false;
             }
 
             return true;
         }
 
-        private void AddContract()
+        private void AddPayment()
         {
             if (!ValidateInputs())
                 return;
@@ -985,47 +927,44 @@ namespace CourseWork
             {
                 using var connection = new SqlConnection(connectionString);
                 using var command = new SqlCommand(
-                    @"INSERT INTO dbo.Contracts
+                    @"INSERT INTO dbo.Payments
                       (
-                          contract_number,
-                          date_signed,
-                          contract_status,
-                          client_id,
-                          tariff_id
+                          contract_id,
+                          payment_date,
+                          amount,
+                          payment_method
                       )
                       VALUES
                       (
-                          @contract_number,
-                          @date_signed,
-                          @contract_status,
-                          @client_id,
-                          @tariff_id
+                          @contract_id,
+                          @payment_date,
+                          @amount,
+                          @payment_method
                       )", connection);
 
-                FillContractParameters(command);
+                FillPaymentParameters(command);
 
                 connection.Open();
                 command.ExecuteNonQuery();
 
-                LoadContracts();
-                MessageBox.Show("Договор успешно добавлен.", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadPayments();
+                MessageBox.Show("Платёж успешно добавлен.", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Не удалось добавить договор.\n\n" +
-                    "Проверь, чтобы номер договора был уникальным.\n\n" + ex.Message,
+                    "Не удалось добавить платёж.\n\n" + ex.Message,
                     "Ошибка",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
         }
 
-        private void UpdateContract()
+        private void UpdatePayment()
         {
-            if (string.IsNullOrWhiteSpace(txtContractId.Text))
+            if (string.IsNullOrWhiteSpace(txtPaymentId.Text))
             {
-                MessageBox.Show("Выберите договор для изменения.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Выберите платёж для изменения.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -1036,45 +975,43 @@ namespace CourseWork
             {
                 using var connection = new SqlConnection(connectionString);
                 using var command = new SqlCommand(
-                    @"UPDATE dbo.Contracts
+                    @"UPDATE dbo.Payments
                       SET
-                          contract_number = @contract_number,
-                          date_signed = @date_signed,
-                          contract_status = @contract_status,
-                          client_id = @client_id,
-                          tariff_id = @tariff_id
-                      WHERE contract_id = @contract_id", connection);
+                          contract_id = @contract_id,
+                          payment_date = @payment_date,
+                          amount = @amount,
+                          payment_method = @payment_method
+                      WHERE payment_id = @payment_id", connection);
 
-                FillContractParameters(command);
-                command.Parameters.Add("@contract_id", SqlDbType.Int).Value = int.Parse(txtContractId.Text);
+                FillPaymentParameters(command);
+                command.Parameters.Add("@payment_id", SqlDbType.Int).Value = int.Parse(txtPaymentId.Text);
 
                 connection.Open();
                 command.ExecuteNonQuery();
 
-                LoadContracts();
-                MessageBox.Show("Данные договора успешно обновлены.", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadPayments();
+                MessageBox.Show("Данные платежа успешно обновлены.", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Не удалось изменить договор.\n\n" +
-                    "Проверь, чтобы номер договора оставался уникальным.\n\n" + ex.Message,
+                    "Не удалось изменить платёж.\n\n" + ex.Message,
                     "Ошибка",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
         }
 
-        private void DeleteContract()
+        private void DeletePayment()
         {
-            if (string.IsNullOrWhiteSpace(txtContractId.Text))
+            if (string.IsNullOrWhiteSpace(txtPaymentId.Text))
             {
-                MessageBox.Show("Выберите договор для удаления.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Выберите платёж для удаления.", "Проверка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             var result = MessageBox.Show(
-                "Удалить выбранный договор?",
+                "Удалить выбранный платёж?",
                 "Подтверждение",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
@@ -1086,35 +1023,37 @@ namespace CourseWork
             {
                 using var connection = new SqlConnection(connectionString);
                 using var command = new SqlCommand(
-                    @"DELETE FROM dbo.Contracts
-                      WHERE contract_id = @contract_id", connection);
+                    @"DELETE FROM dbo.Payments
+                      WHERE payment_id = @payment_id", connection);
 
-                command.Parameters.Add("@contract_id", SqlDbType.Int).Value = int.Parse(txtContractId.Text);
+                command.Parameters.Add("@payment_id", SqlDbType.Int).Value = int.Parse(txtPaymentId.Text);
 
                 connection.Open();
                 command.ExecuteNonQuery();
 
-                LoadContracts();
-                MessageBox.Show("Договор успешно удалён.", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadPayments();
+                MessageBox.Show("Платёж успешно удалён.", "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Не удалось удалить договор.\n\n" +
-                    "Возможно, на него уже ссылаются платежи, оборудование или заявки.\n\n" + ex.Message,
+                    "Не удалось удалить платёж.\n\n" + ex.Message,
                     "Ошибка",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
         }
 
-        private void FillContractParameters(SqlCommand command)
+        private void FillPaymentParameters(SqlCommand command)
         {
-            command.Parameters.Add("@contract_number", SqlDbType.NVarChar, 30).Value = txtContractNumber.Text.Trim();
-            command.Parameters.Add("@date_signed", SqlDbType.Date).Value = dtpDateSigned.Value.Date;
-            command.Parameters.Add("@contract_status", SqlDbType.NVarChar, 50).Value = cmbStatus.Text.Trim();
-            command.Parameters.Add("@client_id", SqlDbType.Int).Value = Convert.ToInt32(cmbClient.SelectedValue);
-            command.Parameters.Add("@tariff_id", SqlDbType.Int).Value = Convert.ToInt32(cmbTariff.SelectedValue);
+            _ = TryParseAmount(txtAmount.Text.Trim(), out decimal amount);
+
+            command.Parameters.Add("@contract_id", SqlDbType.Int).Value = Convert.ToInt32(cmbContract.SelectedValue);
+            command.Parameters.Add("@payment_date", SqlDbType.Date).Value = dtpPaymentDate.Value.Date;
+            command.Parameters.Add("@amount", SqlDbType.Decimal).Value = amount;
+            command.Parameters["@amount"].Precision = 10;
+            command.Parameters["@amount"].Scale = 2;
+            command.Parameters.Add("@payment_method", SqlDbType.NVarChar, 50).Value = cmbPaymentMethod.Text.Trim();
         }
 
         private void ClearInputs()
@@ -1123,30 +1062,25 @@ namespace CourseWork
 
             try
             {
-                dgvContracts.ClearSelection();
-                dgvContracts.CurrentCell = null;
+                dgvPayments.ClearSelection();
+                dgvPayments.CurrentCell = null;
 
-                txtContractId.Text = "";
-                txtContractNumber.Text = "";
-                dtpDateSigned.Value = DateTime.Today;
-                cmbStatus.Text = "Активен";
+                txtPaymentId.Text = "";
+                dtpPaymentDate.Value = DateTime.Today;
+                txtAmount.Text = "";
+                cmbPaymentMethod.Text = "Банковская карта";
 
-                if (clientsLookupTable.Rows.Count > 0)
-                    cmbClient.SelectedIndex = 0;
+                if (contractsLookupTable.Rows.Count > 0)
+                    cmbContract.SelectedIndex = 0;
                 else
-                    cmbClient.SelectedIndex = -1;
-
-                if (tariffsLookupTable.Rows.Count > 0)
-                    cmbTariff.SelectedIndex = 0;
-                else
-                    cmbTariff.SelectedIndex = -1;
+                    cmbContract.SelectedIndex = -1;
             }
             finally
             {
                 suppressSelectionChanged = false;
             }
 
-            txtContractNumber.Focus();
+            txtAmount.Focus();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
