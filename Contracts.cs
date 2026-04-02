@@ -739,7 +739,7 @@ namespace CourseWork
                       FROM dbo.Contracts c
                       INNER JOIN dbo.Clients cl ON cl.client_id = c.client_id
                       INNER JOIN dbo.Tariffs t ON t.tariff_id = c.tariff_id
-                      ORDER BY c.date_signed DESC, c.contract_id DESC", connection);
+                      ORDER BY c.date_signed ASC, c.contract_id ASC", connection);
 
                 contractsTable.Clear();
                 adapter.Fill(contractsTable);

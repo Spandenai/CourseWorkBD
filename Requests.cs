@@ -789,7 +789,7 @@ namespace CourseWork
                       FROM dbo.Requests r
                       INNER JOIN dbo.Clients cl ON cl.client_id = r.client_id
                       LEFT JOIN dbo.Contracts c ON c.contract_id = r.contract_id
-                      ORDER BY r.request_date DESC, r.request_id DESC", connection);
+                      ORDER BY r.request_date ASC, r.request_id ASC", connection);
 
                 requestsTable.Clear();
                 adapter.Fill(requestsTable);

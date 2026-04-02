@@ -718,7 +718,7 @@ namespace CourseWork
                       FROM dbo.Equipment e
                       INNER JOIN dbo.Contracts c ON c.contract_id = e.contract_id
                       INNER JOIN dbo.Clients cl ON cl.client_id = c.client_id
-                      ORDER BY e.equipment_id DESC", connection);
+                      ORDER BY e.equipment_id ASC", connection);
 
                 equipmentTable.Clear();
                 adapter.Fill(equipmentTable);

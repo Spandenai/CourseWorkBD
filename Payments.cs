@@ -703,7 +703,7 @@ namespace CourseWork
                       FROM dbo.Payments p
                       INNER JOIN dbo.Contracts c ON c.contract_id = p.contract_id
                       INNER JOIN dbo.Clients cl ON cl.client_id = c.client_id
-                      ORDER BY p.payment_date DESC, p.payment_id DESC", connection);
+                      ORDER BY p.payment_date ASC, p.payment_id ASC", connection);
 
                 paymentsTable.Clear();
                 adapter.Fill(paymentsTable);
