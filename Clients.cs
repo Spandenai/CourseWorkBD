@@ -12,8 +12,7 @@ namespace CourseWork
     public partial class Clients : Form
     {
         // Строка подключения к базе данных
-        private readonly string connectionString =
-            @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=InternetProviderDB;Integrated Security=True;Connect Timeout=30;Encrypt=False";
+        private readonly string connectionString = @"Server=DESKTOP-1G427TO\SQLEXPRESS;Database=InternetProviderDB;Trusted_Connection=True;TrustServerCertificate=True;";
 
         // Основные цвета формы
         private readonly Color formBackColor = Color.FromArgb(241, 245, 249);
